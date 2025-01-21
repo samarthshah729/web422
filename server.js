@@ -4,8 +4,8 @@
 * No part of this assignment has been copied manually or electronically from any other source
 * (including web sites) or distributed to other students.
 *
-* Name: Yash Shah   Student ID: __171469224__________   Date: _____21-5-2025___________
-* Vercel Link: __________________web-422-opal.vercel.app_____________________________________________
+* Name: Samarth Shah   Student ID: 171968225  Date: _____20-5-2025___________
+* Vercel Link: https://web422-lemon.vercel.app/__________________web-422-opal.vercel.app_____________________________________________
 ********************************************************************************/
 
 require('dotenv').config();
@@ -15,93 +15,93 @@ const cors = require('cors');
 const MoviesDB = require('./modules/moviesDB');
 
 const app = express();
-const HTTP_PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
-const moviesDB = new MoviesDB();
+// Instance of MoviesDB
+const database = new MoviesDB();
 
-// Middleware
-app.use(bodyParser.json());
+// Middleware configuration
+app.use(express.json());
 app.use(cors());
 
-// Root Route
+// Root route to confirm API is active
 app.get('/', (req, res) => {
-  res.json({ message: 'API Listening' });
+  res.status(200).json({ message: 'API is running and accessible' });
 });
 
-// Initialize the database connection before starting the server
-moviesDB.initialize(process.env.MONGODB_CONN_STRING)
+// Initialize the database and start the server
+database.initialize(process.env.MONGODB_CONN_STRING)
   .then(() => {
-    
-    // POST /api/movies
+    console.log('Connected to the database successfully.');
+
+    // Route to add a new movie
     app.post('/api/movies', async (req, res) => {
       try {
-        const newMovie = await moviesDB.addNewMovie(req.body);
-        res.status(201).json(newMovie);
-      } catch (err) {
-        res.status(500).json({ error: err.message });
+        const addedMovie = await database.addNewMovie(req.body);
+        res.status(201).json(addedMovie);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
-    // GET /api/movies
+    // Route to fetch movies with pagination and optional title filter
     app.get('/api/movies', async (req, res) => {
       const { page, perPage, title } = req.query;
       try {
-        const movies = await moviesDB.getAllMovies(page, perPage, title);
-        res.json(movies);
-      } catch (err) {
-        res.status(500).json({ error: err.message });
+        const movies = await database.getAllMovies(page, perPage, title);
+        res.status(200).json(movies);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
-    // GET /api/movies/:id
+    // Route to fetch a single movie by ID
     app.get('/api/movies/:id', async (req, res) => {
       try {
-        const movie = await moviesDB.getMovieById(req.params.id);
+        const movie = await database.getMovieById(req.params.id);
         if (movie) {
-          res.json(movie);
+          res.status(200).json(movie);
         } else {
           res.status(404).json({ error: 'Movie not found' });
         }
-      } catch (err) {
-        res.status(500).json({ error: err.message });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
-    // PUT /api/movies/:id
+    // Route to update a movie by ID
     app.put('/api/movies/:id', async (req, res) => {
       try {
-        const updated = await moviesDB.updateMovieById(req.body, req.params.id);
-        if (updated.nModified > 0) {
-          res.json({ success: 'Movie updated successfully' });
+        const result = await database.updateMovieById(req.body, req.params.id);
+        if (result.nModified > 0) {
+          res.status(200).json({ success: 'Movie updated successfully' });
         } else {
-          res.status(404).json({ error: 'Movie not found or no changes made' });
+          res.status(404).json({ error: 'No movie found or no updates applied' });
         }
-      } catch (err) {
-        res.status(500).json({ error: err.message });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
-    // DELETE /api/movies/:id
+    // Route to delete a movie by ID
     app.delete('/api/movies/:id', async (req, res) => {
       try {
-        const deleted = await moviesDB.deleteMovieById(req.params.id);
-        if (deleted.deletedCount > 0) {
-          res.status(204).end(); // No content
+        const result = await database.deleteMovieById(req.params.id);
+        if (result.deletedCount > 0) {
+          res.status(204).end();
         } else {
           res.status(404).json({ error: 'Movie not found' });
         }
-      } catch (err) {
-        res.status(500).json({ error: err.message });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
     });
 
-    // Start the server
-    app.listen(HTTP_PORT, () => {
-      console.log(`Server listening on: ${HTTP_PORT}`);
+    // Start listening on the specified port
+    app.listen(PORT, () => {
+      console.log(`Server is running on port: ${PORT}`);
     });
   })
-  .catch((err) => {
-    console.error(`Failed to initialize the database: ${err.message}`);
+  .catch((error) => {
+    console.error(`Error initializing database connection: ${error.message}`);
   });
-
-  
